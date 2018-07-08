@@ -6,12 +6,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 import os
 import sys
-import models
-import util
+import models #???????
+import util  #util.py
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-
-import util
 
 def save_state(model, acc):
     print('==> Saving model ...')
@@ -93,7 +91,7 @@ def adjust_learning_rate(optimizer, epoch):
 if __name__=='__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N',   #metavar是在 usage 说明中的参数名称
             help='input batch size for training (default: 128)')
     parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
             help='input batch size for testing (default: 128)')
@@ -112,7 +110,7 @@ if __name__=='__main__':
     parser.add_argument('--seed', type=int, default=1, metavar='S',
             help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
-            help='how many batches to wait before logging training status')
+            help='how many batches to wait before logging training status')   #??????????????
     parser.add_argument('--arch', action='store', default='LeNet_5',
             help='the MNIST network structure: LeNet_5')
     parser.add_argument('--pretrained', action='store', default=None,
@@ -120,7 +118,7 @@ if __name__=='__main__':
     parser.add_argument('--evaluate', action='store_true', default=False,
             help='whether to run evaluation')
     args = parser.parse_args()
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    args.cuda = not args.no_cuda and torch.cuda.is_available()    
 
     print(args)
     
@@ -129,13 +127,13 @@ if __name__=='__main__':
         torch.cuda.manual_seed(args.seed)
     
     # load data
-    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}  # pin_memory=True 则有利于移动到GPU中去
     train_loader = torch.utils.data.DataLoader(
             datasets.MNIST('data', train=True, download=True,
                 transform=transforms.Compose([
                     transforms.ToTensor(),
                     transforms.Normalize((0.1307,), (0.3081,))
-                    ])),
+                    ])),                                                 # 括号个数好像不对啊，感觉多了一个括号，取掉以后又不对了
                 batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
             datasets.MNIST('data', train=False, transform=transforms.Compose([
@@ -143,7 +141,7 @@ if __name__=='__main__':
                 transforms.Normalize((0.1307,), (0.3081,))
                 ])),
             batch_size=args.test_batch_size, shuffle=True, **kwargs)
-    
+    #######################################################################################################################
     # generate the model
     if args.arch == 'LeNet_5':
         model = models.LeNet_5()
