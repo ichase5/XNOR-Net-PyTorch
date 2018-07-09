@@ -6,12 +6,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 import os
 import sys
-import models
+import models    #import 文件夹名
 import util
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 
-import util
+import util  #util.py 将模型二值化
 
 def save_state(model, acc):
     print('==> Saving model ...')
@@ -21,13 +21,14 @@ def save_state(model, acc):
             }
     for key in state['state_dict'].keys():
         if 'module' in key:
-            state['state_dict'][key.replace('module.', '')] = \
-                    state['state_dict'].pop(key)
+            state['state_dict'][key.replace('module.', '')] =  state['state_dict'].pop(key)
+            #在state['state_dict']这个字典里有key = ['module.123'],现在再添加一个键，它的值与key = ['module.123']的值一样
+            #e.g.  state['state_dict']['123'] = state['state_dict']['module.123'] 
     torch.save(state, 'models/'+args.arch+'.best.pth.tar')
 
 def train(epoch):
     model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
+    for batch_idx, (data, target) in enumerate(train_loader):  #注意，data和target都是batch数据
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
@@ -36,43 +37,42 @@ def train(epoch):
         # process the weights including binarization
         bin_op.binarization()
 
-        output = model(data)
+        output = model(data)   #用二值化了的参数 进行forward传播
         loss = criterion(output, target)
         loss.backward()
 
         # restore weights
-        bin_op.restore()
-        bin_op.updateBinaryGradWeight()
+        bin_op.restore()   
+        bin_op.updateBinaryGradWeight()  #使用未二值化的参数去计算反向梯度
 
-        optimizer.step()
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.data[0]))
+        optimizer.step()  #更新参数   ？？？？？？是更新原始参数还是二值化了的参数
+        if batch_idx % args.log_interval == 0:   # 每log_interval个batch,print一次
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset),
+                100 * batch_idx / len(train_loader), loss.data[0]))  #loss.data[0]估计要写成loss.data.item()
     return
 
 def test(evaluate=False):
-    global best_acc
-    model.eval()
+    global best_acc  #这样就可以在函数里修改本来不属于函数的变量了
+    model.eval()##############
     test_loss = 0
     correct = 0
 
-    bin_op.binarization()
+    bin_op.binarization()  #将参数二值化掉
     for data, target in test_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
+        data, target = Variable(data, volatile=True), Variable(target)   # volatile属性为True的节点不求导数
         output = model(data)
         test_loss += criterion(output, target).data[0]
-        pred = output.data.max(1, keepdim=True)[1]
-        correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+        pred = output.data.max(1, keepdim=True)[1]  #[1] 得到索引
+        correct += pred.eq(target.data.view_as(pred)).cpu().sum()  #.cpu()函数将数据从gpu转到cpu上
 
-    bin_op.restore()
+    bin_op.restore() #重新使用未二值化的参数
     
     acc = 100. * correct / len(test_loader.dataset)
     if (acc > best_acc):
         best_acc = acc
-        if not evaluate:
+        if not evaluate:  ###？？？？？
             save_state(model, best_acc)
 
     test_loss /= len(test_loader.dataset)
@@ -84,9 +84,9 @@ def test(evaluate=False):
 
 def adjust_learning_rate(optimizer, epoch):
     """Sets the learning rate to the initial LR decayed by 10 every 15 epochs"""
-    lr = args.lr * (0.1 ** (epoch // args.lr_epochs))
+    lr = args.lr * (0.1 ** (epoch // args.lr_epochs))  #  //运算结果是整数
     print('Learning rate:', lr)
-    for param_group in optimizer.param_groups:
+    for param_group in optimizer.param_groups: #更新各个层的参数学习速率
         param_group['lr'] = lr
     return lr
 
@@ -156,19 +156,19 @@ if __name__=='__main__':
     else:
         pretrained_model = torch.load(args.pretrained)
         best_acc = pretrained_model['acc']
-        model.load_state_dict(pretrained_model['state_dict'])
+        model.load_state_dict(pretrained_model['state_dict']) #将预训练过的模型的参数状态加载到model里
 
     if args.cuda:
-        model.cuda()
+        model.cuda() #网络移植到gpu上
     
     print(model)
-    param_dict = dict(model.named_parameters())
+    param_dict = dict(model.named_parameters())  # model.named_parameters()是generator类型的数据
     params = []
     
     base_lr = 0.1
     
     for key, value in param_dict.items():
-        params += [{'params':[value], 'lr': args.lr,
+        params += [{'params':[value], 'lr': args.lr,   #为什么要[value]，而不是value???
             'weight_decay': args.weight_decay,
             'key':key}]
     
