@@ -3,12 +3,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class BinActive(torch.autograd.Function):
+#自定义自动求导的函数
+class BinActive(torch.autograd.Function): #将输入的激活值二值化
     '''
     Binarize the input activations and calculate the mean across channel dimension.
     '''
     def forward(self, input):
-        self.save_for_backward(input)
+        self.save_for_backward(input) 
         size = input.size()
         input = input.sign()
         return input
@@ -16,8 +17,8 @@ class BinActive(torch.autograd.Function):
     def backward(self, grad_output):
         input, = self.saved_tensors
         grad_input = grad_output.clone()
-        grad_input[input.ge(1)] = 0
-        grad_input[input.le(-1)] = 0
+        grad_input[input.ge(1)] = 0 #ge即大于等于
+        grad_input[input.le(-1)] = 0 #le即小于等于
         return grad_input
 
 class BinConv2d(nn.Module): # change the name of BinConv2d
@@ -37,9 +38,9 @@ class BinConv2d(nn.Module): # change the name of BinConv2d
             self.dropout = nn.Dropout(dropout)
         self.Linear = Linear
         if not self.Linear:
-            self.bn = nn.BatchNorm2d(input_channels, eps=1e-4, momentum=0.1, affine=True)
+            self.bn = nn.BatchNorm2d(input_channels, eps=1e-4, momentum=0.1, affine=True) #batchnorm是对channel进行的
             self.conv = nn.Conv2d(input_channels, output_channels,
-                    kernel_size=kernel_size, stride=stride, padding=padding, groups=groups)
+                    kernel_size=kernel_size, stride=stride, padding=padding, groups=groups) #groups参数决定将数据按channel划分多少组
         else:
             if self.previous_conv:
                 self.bn = nn.BatchNorm2d(input_channels//size, eps=1e-4, momentum=0.1, affine=True) 
