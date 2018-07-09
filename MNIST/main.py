@@ -72,14 +72,14 @@ def test(evaluate=False):
     acc = 100. * correct / len(test_loader.dataset)
     if (acc > best_acc):
         best_acc = acc
-        if not evaluate:  ###？？？？？
+        if not evaluate:  # not evaluate说明是训练过程，每次迭代一个epoch后的测试正确率高于best_acc时才保存模型
             save_state(model, best_acc)
 
     test_loss /= len(test_loader.dataset)
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(   #当前模型的测试准确率
         test_loss * args.batch_size, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
-    print('Best Accuracy: {:.2f}%\n'.format(best_acc))
+    print('Best Accuracy: {:.2f}%\n'.format(best_acc))  #此时的best_acc
     return
 
 def adjust_learning_rate(optimizer, epoch):
