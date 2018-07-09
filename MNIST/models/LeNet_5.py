@@ -94,7 +94,7 @@ class LeNet_5(nn.Module):
         x = self.bin_conv2(x)
         x = self.pool2(x)
 
-        # x = x.view(x.size(0), 50*4*4)
+        ## x = x.view(x.size(0), 50*4*4)
 
         x = self.bin_ip1(x)
         x = self.ip2(x)
