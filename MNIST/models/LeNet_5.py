@@ -65,9 +65,9 @@ class BinConv2d(nn.Module): # change the name of BinConv2d
 class LeNet_5(nn.Module):
     def __init__(self):
         super(LeNet_5, self).__init__()
-        self.conv1 = nn.Conv2d(1, 20, kernel_size=5, stride=1)
-        self.bn_conv1 = nn.BatchNorm2d(20, eps=1e-4, momentum=0.1, affine=False)
-        self.relu_conv1 = nn.ReLU(inplace=True)
+        self.conv1 = nn.Conv2d(1, 20, kernel_size=5, stride=1) # 1是输入depth，20是输出depth
+        self.bn_conv1 = nn.BatchNorm2d(20, eps=1e-4, momentum=0.1, affine=False) # 均值方法使用的是动量加权平均，所以有momentum参数
+        self.relu_conv1 = nn.ReLU(inplace=True) # inplace=True 意味着relu操作时原地运算,改变原来的值    
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.bin_conv2 = BinConv2d(20, 50, kernel_size=5, stride=1, padding=0)
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
