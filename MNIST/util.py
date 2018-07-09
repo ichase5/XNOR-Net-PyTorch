@@ -64,7 +64,8 @@ class BinOp():
     def restore(self):  #将在self.saved_params[index]中的数据复制到self.target_modules[index].data中去
         for index in range(self.num_of_params):
             self.target_modules[index].data.copy_(self.saved_params[index])
-
+    
+    #？？？？？看不懂
     def updateBinaryGradWeight(self): # 此时 self.target_modules[index].data中 仍是未二值化的参数
         for index in range(self.num_of_params):
             weight = self.target_modules[index].data
@@ -75,11 +76,12 @@ class BinOp():
                 #用未二值化的参数求均值
             elif len(s) == 2:  #全连接层
                 m = weight.norm(1, 1, keepdim=True).div(n).expand(s)    #用未二值化的参数求均值
-            m[weight.lt(-1.0)] = 0 #####################
-            m[weight.gt(1.0)] = 0  #####################
-            m = m.mul(self.target_modules[index].grad.data)
-            m_add = weight.sign().mul(self.target_modules[index].grad.data)
+            m[weight.lt(-1.0)] = 0 #lt代表小于
+            m[weight.gt(1.0)] = 0  #gt代表大于
+            m = m.mul(self.target_modules[index].grad.data)                  #均值矩阵（处理过的）点乘梯度
+            m_add = weight.sign().mul(self.target_modules[index].grad.data)  #二值化的权重点乘权重的梯度
             if len(s) == 4:
+                #对m_add求均值
                 m_add = m_add.sum(3, keepdim=True).sum(2, keepdim=True).sum(1, keepdim=True).div(n).expand(s)
             elif len(s) == 2:
                 m_add = m_add.sum(1, keepdim=True).div(n).expand(s)
