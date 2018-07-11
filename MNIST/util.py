@@ -65,8 +65,8 @@ class BinOp():
         for index in range(self.num_of_params):
             self.target_modules[index].data.copy_(self.saved_params[index])
     
-    #？？？？？看不懂
-    def updateBinaryGradWeight(self): # 此时 self.target_modules[index].data中 仍是未二值化的参数
+    ####这个原理不了解
+    def updateBinaryGradWeight(self): # 此时 self.target_modules[index].data中 仍是未二值化的参数,值在[-1,1]之间
         for index in range(self.num_of_params):
             weight = self.target_modules[index].data
             n = weight[0].nelement()
@@ -76,6 +76,7 @@ class BinOp():
                 #用未二值化的参数求均值
             elif len(s) == 2:  #全连接层
                 m = weight.norm(1, 1, keepdim=True).div(n).expand(s)    #用未二值化的参数求均值
+            #这里根本就没有比-1小或者比1大的权重了啊，已经裁剪过了,冗余 步骤?
             m[weight.lt(-1.0)] = 0 #lt代表小于
             m[weight.gt(1.0)] = 0  #gt代表大于
             m = m.mul(self.target_modules[index].grad.data)                  #均值矩阵（处理过的）点乘梯度
