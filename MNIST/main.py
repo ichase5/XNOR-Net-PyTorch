@@ -7,62 +7,61 @@ import torch.optim as optim
 import os
 import sys
 import models    #import 文件夹名
-import util
+import util      #util.py 负责权重二值化传播和更新工作
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 
-import util  #util.py 将模型二值化
 
-def save_state(model, acc):
+def save_state(model, acc): #保存模型
     print('==> Saving model ...')
     state = {
             'acc': acc,
-            'state_dict': model.state_dict(),
+            'state_dict': model.state_dict(),      # torch.nn.Module.state_dict() 返回 模型的参数信息
             }
     for key in state['state_dict'].keys():
         if 'module' in key:
             state['state_dict'][key.replace('module.', '')] =  state['state_dict'].pop(key)
-            #在state['state_dict']这个字典里有key = ['module.123'],现在再添加一个键，它的值与key = ['module.123']的值一样
-            #e.g.  state['state_dict']['123'] = state['state_dict']['module.123'] 
+            #在state['state_dict']这个字典里有key = ['module.conv'],现在再删掉这个键，新的键['conv']的值和键['module.conv']的值相同
+            #e.g.  state['state_dict']['module.conv'] ==》 state['state_dict']['conv'] 
     torch.save(state, 'models/'+args.arch+'.best.pth.tar')
 
 def train(epoch):
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):  #注意，data和target都是batch数据
+    model.train()  # 这条语句需要加上,因为batch norm和drop out在训练和测试过程中的行为不一致
+    for batch_idx, (data, target) in enumerate(train_loader):  #注意,data和target都是batch数据
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
-        optimizer.zero_grad()
+        optimizer.zero_grad() #梯度清0
 
         # process the weights including binarization
-        bin_op.binarization()
+        bin_op.binarization()  #bin_op是主函数里的变量，python语言允许这样使用
 
         output = model(data)   #用二值化了的参数 进行forward传播
-        loss = criterion(output, target)
+        loss = criterion(output, target)   # criterion也是主函数里的
         loss.backward()
 
         # restore weights
         bin_op.restore()   
         bin_op.updateBinaryGradWeight()  #使用未二值化的参数去计算反向梯度
 
-        optimizer.step()  #更新参数   ？？？？？？是更新原始参数还是二值化了的参数
+        optimizer.step()  # 是更新未二值化的参数
         if batch_idx % args.log_interval == 0:   # 每log_interval个batch,print一次
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset),
                 100 * batch_idx / len(train_loader), loss.data[0]))  #loss.data[0]估计要写成loss.data.item()
     return
 
 def test(evaluate=False):
-    global best_acc  #这样就可以在函数里修改本来不属于函数的变量了
-    model.eval()##############
+    global best_acc  #best_acc是主函数里的变量，global以后可以修改   ##注：主函数中的数字，字符串，元组要修改需要声明global，其它不需要声明就可以改
+    model.eval() # 这条语句需要加上,因为batch norm和drop out在训练和测试过程中的行为不一致
     test_loss = 0
     correct = 0
 
-    bin_op.binarization()  #将参数二值化掉
+    bin_op.binarization()  #将参数二值化掉，训练完之后保存的参数是非二值化的
     for data, target in test_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)   # volatile属性为True的节点不求导数
-        output = model(data)
+        output = model(data) #二值化参数正向传播进行预测
         test_loss += criterion(output, target).data[0]
         pred = output.data.max(1, keepdim=True)[1]  #[1] 得到索引
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()  #.cpu()函数将数据从gpu转到cpu上
@@ -167,8 +166,8 @@ if __name__=='__main__':
     
     base_lr = 0.1
     
-    for key, value in param_dict.items():
-        params += [{'params':[value], 'lr': args.lr,   #为什么要[value]，而不是value???
+    for key, value in param_dict.items():  #value是torch里的parameter类型数据
+        params += [{'params':[value], 'lr': args.lr,   #为每个参数单独指定超参数
             'weight_decay': args.weight_decay,
             'key':key}]
     
@@ -181,10 +180,10 @@ if __name__=='__main__':
     bin_op = util.BinOp(model)
 
     if args.evaluate:
-        test(evaluate=True)
+        test(evaluate=True) #测试模式不保存模型
         exit()
 
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(1, args.epochs + 1): #训练模式
         adjust_learning_rate(optimizer, epoch)
         train(epoch)
         test()
