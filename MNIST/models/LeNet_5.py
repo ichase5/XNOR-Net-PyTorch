@@ -72,7 +72,7 @@ class LeNet_5(nn.Module):
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.bin_conv2 = BinConv2d(20, 50, kernel_size=5, stride=1, padding=0) #20是输入通道数，50是输出通道数
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.bin_ip1 = BinConv2d(50*4*4, 500, Linear=True,        #？？？？感觉是50*5*5啊。。。。
+        self.bin_ip1 = BinConv2d(50*4*4, 500, Linear=True,        #MNIST数据集是1*28*28的
                 previous_conv=True, size=4*4)
         self.ip2 = nn.Linear(500, 10)
 
